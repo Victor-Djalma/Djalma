@@ -79,7 +79,7 @@ foreach ($usuario in $usuariosInativos) {
 # Parte 3 - Desabilitacao de contas com base em lista do RH
 <#
 # Define o caminho do arquivo TXT contendo os usuarios desligados
-$arquivoUsuarios = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\usuariosdesativados.txt"
+$arquivoUsuarios = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\usuariosdesativados.csv"
 
 # Define o caminho do log e cria o arquivo se nao existir
 $logPath = "C:\Users\meupau\Documents\WindowsPowerShell\Scripts\Log_Desativacao.txt"
@@ -87,7 +87,7 @@ if (!(Test-Path $logPath)) { New-Item -Path $logPath -ItemType File -Force }
 
 # Verifica se o arquivo de usuarios desligados existe
 if (Test-Path $arquivoUsuarios) {
-    # Le todas as linhas do arquivo TXT
+    # Le todas as linhas do arquivo CSV
     $listaUsuarios = Get-Content $arquivoUsuarios
 
     foreach ($linha in $listaUsuarios) {
