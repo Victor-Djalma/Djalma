@@ -1,0 +1,100 @@
+# Definir o caminho do arquivo com os usuarios
+#$arquivo = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\listarusuarios.txt"
+
+# Definir os grupos a serem criados
+#$grupos = @("TI", "Comercial", "Financeiro", "Compras", "Producao")
+
+# Criar grupos no Active Directory caso nao existam
+<#
+foreach ($grupo in $grupos) {
+    if (-not (Get-ADGroup -Filter {Name -eq $grupo})) {
+        New-ADGroup -Name $grupo -GroupScope Global -GroupCategory Security -Description "Grupo $grupo"
+    }
+}
+#>
+
+#$i = 0 # Contador de linha
+
+# Ler o arquivo de usuarios e criar no AD
+<#
+Get-Content $arquivo | ForEach-Object {
+    # Separar dados do usuario (nome.sobrenome)
+    $dados = $_ -split ";"
+    $usuario = $dados[0]
+    $departamento = $dados[1]
+
+    # Criar nome e definir credenciais
+    $nomeCompleto = $usuario
+    $nome = $usuario.Split("_")[0]
+    $sobrenome = $usuario.Split("_")[1]
+    $usuarioPrincipal = "$nome.$sobrenome"
+    $senha = ConvertTo-SecureString "Senai@134" -AsPlainText -Force
+
+    # Criar usuario no AD
+    New-ADUser -SamAccountName $usuarioPrincipal `
+               -UserPrincipalName "$usuarioPrincipal@dominio.com" `
+               -Name "$nomeCompleto" `
+               -GivenName $nome `
+               -Surname $sobrenome `
+               -DisplayName "$nome $sobrenome" `
+               -AccountPassword $senha `
+               -Enabled $true `
+               -PassThru `
+               -ChangePasswordAtLogon $true
+
+    # Atribuir usuario ao grupo correspondente (rodizio)
+    $indiceGrupo = $i % $grupos.Length
+    $grupoEscolhido = $grupos[$indiceGrupo]
+    Add-ADGroupMember -Identity $grupoEscolhido -Members $usuarioPrincipal
+
+    Write-Host "Usuario $usuarioPrincipal criado e adicionado ao grupo $grupoEscolhido"
+    
+    $i++
+}
+#>
+
+# Validar criacao e alocacao dos usuarios
+<#
+$usuariosCriados = Get-ADUser -Filter * -Property MemberOf 
+foreach ($usuario in $usuariosCriados) {
+    $gruposUsuario = $usuario.MemberOf | ForEach-Object { (Get-ADGroup $_).Name }
+    Write-Host "Usuario: $($usuario.SamAccountName) - Grupos: $($gruposUsuario -join ', ')"
+}
+#>
+
+# Parte 2 - Monitoramento e limpeza de contas inativas
+<#
+$limite = (Get-Date).AddDays(-90)
+$usuariosInativos = Get-ADUser -Filter {LastLogonTimeStamp -lt $limite} -Properties LastLogonTimeStamp | 
+                    Select-Object Name, SamAccountName, LastLogonTimeStamp
+
+$usuariosInativos | Export-Csv "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\Relatorio_Usuarios_Inativos.csv" -NoTypeInformation
+
+foreach ($usuario in $usuariosInativos) {
+    Disable-ADAccount -Identity $usuario.SamAccountName
+    Write-Host "Conta desativada: $($usuario.SamAccountName)"
+}
+#>
+
+# Parte 3 - Desabilitacao de contas com base em lista do RH
+<#
+# Define o caminho do arquivo TXT contendo os usuarios desligados
+$arquivoUsuarios = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\usuariosdesativados.txt"
+
+# Define o caminho do log e cria o arquivo se nao existir
+$logPath = "C:\Users\meupau\Documents\WindowsPowerShell\Scripts\Log_Desativacao.txt"
+if (!(Test-Path $logPath)) { New-Item -Path $logPath -ItemType File -Force }
+
+# Verifica se o arquivo de usuarios desligados existe
+if (Test-Path $arquivoUsuarios) {
+    # Le todas as linhas do arquivo TXT
+    $listaUsuarios = Get-Content $arquivoUsuarios
+
+    foreach ($linha in $listaUsuarios) {
+        $usuariodis = $linha.Trim()  # Remove espacos extras
+
+        # Verifica se a linha nao esta vazia
+        if (![string]:
+
+    Write-Host "Erro: O arquivo $arquivoUsuarios nao foi encontrado."
+}
