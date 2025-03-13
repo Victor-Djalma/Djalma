@@ -1,5 +1,5 @@
 # Definir o caminho do arquivo com os usuarios
-#$arquivo = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\listarusuarios.txt"
+#$arquivo = "C:\UM\CAMINHO\PARA\A\listarusuarios.txt"
 
 # Definir os grupos a serem criados
 #$grupos = @("TI", "Comercial", "Financeiro", "Compras", "Producao")
@@ -68,7 +68,7 @@ $limite = (Get-Date).AddDays(-90)
 $usuariosInativos = Get-ADUser -Filter {LastLogonTimeStamp -lt $limite} -Properties LastLogonTimeStamp | 
                     Select-Object Name, SamAccountName, LastLogonTimeStamp
 
-$usuariosInativos | Export-Csv "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\Relatorio_Usuarios_Inativos.csv" -NoTypeInformation
+$usuariosInativos | Export-Csv "C:\UM\CAMINHO\PARA\A\Relatorio_Usuarios_Inativos.csv" -NoTypeInformation
 
 foreach ($usuario in $usuariosInativos) {
     Disable-ADAccount -Identity $usuario.SamAccountName
@@ -76,25 +76,43 @@ foreach ($usuario in $usuariosInativos) {
 }
 #>
 
-# Parte 3 - Desabilitacao de contas com base em lista do RH
-<#
-# Define o caminho do arquivo TXT contendo os usuarios desligados
-$arquivoUsuarios = "C:\Users\Administrator\Documents\WindowsPowerShell\Scripts\usuariosdesativados.csv"
+# Parte 3 - Desabilitação de contas com base em lista do RH
+# Define o caminho do arquivo TXT contendo os usuários desligados
+$arquivoUsuarios = "C:\UM\CAMINHO\PARA\A\usuariosdesativados.txt"
 
-# Define o caminho do log e cria o arquivo se nao existir
-$logPath = "C:\Users\meupau\Documents\WindowsPowerShell\Scripts\Log_Desativacao.txt"
+# Define o caminho do log e cria o arquivo se não existir
+$logPath = "C:\UM\CAMINHO\PARA\A\Log_Desativacao.txt"
 if (!(Test-Path $logPath)) { New-Item -Path $logPath -ItemType File -Force }
 
-# Verifica se o arquivo de usuarios desligados existe
+# Verifica se o arquivo de usuários desligados existe
 if (Test-Path $arquivoUsuarios) {
-    # Le todas as linhas do arquivo CSV
+    # Lê todas as linhas do arquivo TXT
     $listaUsuarios = Get-Content $arquivoUsuarios
 
     foreach ($linha in $listaUsuarios) {
-        $usuariodis = $linha.Trim()  # Remove espacos extras
+        $usuariodis = $linha.Trim()  # Remove espaços extras
 
-        # Verifica se a linha nao esta vazia
-        if (![string]:
+        # Verifica se a linha não está vazia
+        if (![string]::IsNullOrWhiteSpace($usuariodis)) {
+            # Procura o usuário no Active Directory
+            $usuarioAD = Get-ADUser -Filter {SamAccountName -eq $usuariodis} -Properties Enabled
 
-    Write-Host "Erro: O arquivo $arquivoUsuarios nao foi encontrado."
+            if ($usuarioAD) {
+                if ($usuarioAD.Enabled) {
+                    Disable-ADAccount -Identity $usuariodis
+                    Add-Content -Path $logPath -Value "Usuário desativado: $usuariodis"
+                    Write-Host "Usuário $usuariodis desativado."
+                } else {
+                    Write-Host "Usuário $usuariodis já está desativado."
+                }
+            } else {
+                Add-Content -Path $logPath -Value "Usuário não encontrado: $usuariodis"
+                Write-Host "Usuário $usuariodis não encontrado no AD."
+            }
+        } else {
+            Write-Host "Linha inválida no TXT (usuário vazio)."
+        }
+    }
+} else {
+    Write-Host "Erro: O arquivo $arquivoUsuarios não foi encontrado."
 }
